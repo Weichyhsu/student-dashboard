@@ -213,12 +213,12 @@
             font-weight: bold;
         }
 
-        .icon-blue { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
-        .icon-green { background: linear-gradient(135deg, #34d399, #10b981); }
-        .icon-purple { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-        .icon-orange { background: linear-gradient(135deg, #fb923c, #f97316); }
-        .icon-red { background: linear-gradient(135deg, #f87171, #ef4444); }
-        .icon-amber { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .icon-blue { background: linear-gradient(135deg, #fad360, #fbcb38); }
+        .icon-green { background: linear-gradient(135deg, #e6efa2, #e1f073); }
+        .icon-purple { background: linear-gradient(135deg, #e0b5f6, #d996fb); }
+        .icon-orange { background: linear-gradient(135deg, #fad264, #f9c946); }
+        .icon-red { background: linear-gradient(135deg, #f8a071, #fc8d52); }
+        .icon-amber { background: linear-gradient(135deg, #feb342, #fba92d); }
 
         .detail-section {
             padding: 30px;
@@ -329,19 +329,19 @@
     <!-- 登入頁面 -->
     <div id="loginPage" class="login-container">
         <div class="glass login-box">
-            <div class="logo">👨‍🏫</div>
-            <h1 class="title">學習成效儀表板</h1>
+            <div class="logo"><img src="teacher.png"  alt="logo" width="89" height="67"></div>
+            <h1 class="title">成績圖表</h1>
             <p class="subtitle">請輸入學號查看學習進度</p>
             
             <div class="input-group">
                 <input type="text" id="studentInput" class="input" placeholder="請輸入學號" />
             </div>
             
-            <button onclick="handleLogin()" class="btn">查看學習成效</button>
+            <button onclick="handleLogin()" class="btn">進入成績圖表</button>
             
             <div class="info">
-                <p><strong>預設測試學號:</strong><br>2024001, 2024002, 2024003, 2024004, 2024005</p>
-                <p style="margin-top: 10px; font-size: 12px;"><strong>管理員學號:</strong> 165540</p>
+                <p><strong>成績圖表中包含:</strong><br>與學習夥伴之互動次數, 認知思考分數, 測驗成績, 課程完成度, 出席率</p>
+                <p style="margin-top: 10px; font-size: 12px;"><strong>每小時更新一次</strong> </p>
             </div>
         </div>
     </div>
