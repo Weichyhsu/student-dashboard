@@ -1159,11 +1159,23 @@ def my_function():
 
     <script>
         // Google Apps Script Web App URL
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzkYuhP6h341e0aLAuec6FLuSquxJXtg31cLQEgjROrOOiQURk8pbp_25UXpXyh2AatdQ/exec';
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwpk38QGjiGSv0UwsfoGSolqAmCGAO3NCfz3vVCpPB9pi3uMNmNFGlCByvgPzYkJE8EUg/exec';
         
         // 全域變數
         let classData = {};
         let currentStudentId = null;
+
+        // 安全更新元素內容的輔助函數
+        function safeUpdateElement(selector, value, isId = true) {
+            const element = isId ? document.getElementById(selector) : document.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                return true;
+            } else {
+                console.warn(`找不到元素: ${selector}`);
+                return false;
+            }
+        }
 
         // 從 Apps Script 獲取資料
         async function fetchDataFromAppsScript(action, studentId = null) {
@@ -1326,9 +1338,12 @@ def my_function():
                     `;
                     
                     // 顯示系統資訊
-                    document.getElementById('adminInfo').style.display = 'block';
-                    document.getElementById('connectionState').textContent = '正常';
-                    document.getElementById('totalStudentCount').textContent = response.studentCount || 0;
+                    const adminInfo = document.getElementById('adminInfo');
+                    if (adminInfo) {
+                        adminInfo.style.display = 'block';
+                    }
+                    safeUpdateElement('connectionState', '正常');
+                    safeUpdateElement('totalStudentCount', response.studentCount || 0);
                 } else {
                     throw new Error('連線測試失敗');
                 }
@@ -1353,80 +1368,117 @@ def my_function():
 
         // 顯示學生儀表板
         function showDashboard(student, allStudents) {
-            const classAvg = calculateClassAverage(allStudents);
-            const engagementData = calculateCognitiveEngagement(student);
-            const engagementInfo = getEngagementLevel(engagementData.score);
-            
-            // 更新頁面顯示
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('adminPage').style.display = 'none';
-            document.getElementById('dashboardPage').style.display = 'block';
+            try {
+                console.log('開始顯示儀表板，學生資料:', student);
+                
+                const classAvg = calculateClassAverage(allStudents);
+                const engagementData = calculateCognitiveEngagement(student);
+                const engagementInfo = getEngagementLevel(engagementData.score);
+                
+                // 更新頁面顯示
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('adminPage').style.display = 'none';
+                document.getElementById('dashboardPage').style.display = 'block';
+
+                // 確保儀表板已經顯示後再更新內容
+                setTimeout(() => {
+                    updateDashboardContent(student, allStudents, classAvg, engagementData, engagementInfo);
+                }, 100);
+                
+            } catch (error) {
+                console.error('顯示儀表板時發生錯誤:', error);
+                alert('顯示資料時發生錯誤，請重新整理頁面再試');
+            }
+        }
+        
+        // 更新儀表板內容
+        function updateDashboardContent(student, allStudents, classAvg, engagementData, engagementInfo) {
 
             // 更新基本資訊
-            document.getElementById('studentName').textContent = student.姓名 || '學生';
-            document.getElementById('studentId').textContent = student.學號;
+            safeUpdateElement('studentName', student.姓名 || '學生');
+            safeUpdateElement('studentId', student.學號);
 
             // 更新主要認知參與度卡片
             const qualityScoreElement = document.getElementById('qualityScore');
-            qualityScoreElement.textContent = engagementData.score;
-            
-            // 如果分數優秀，加入慶祝動畫
-            if (engagementData.score >= 85) {
-                qualityScoreElement.classList.add('animate-pulse');
+            if (qualityScoreElement) {
+                qualityScoreElement.textContent = engagementData.score;
+                
+                // 如果分數優秀，加入慶祝動畫
+                if (engagementData.score >= 85) {
+                    qualityScoreElement.classList.add('animate-pulse');
+                }
             }
             
             const qualityLevelElement = document.getElementById('qualityLevel');
-            qualityLevelElement.textContent = engagementInfo.level;
-            qualityLevelElement.className = `quality-level ${engagementInfo.class}`;
-            document.getElementById('qualityDescription').textContent = engagementInfo.description;
+            if (qualityLevelElement) {
+                qualityLevelElement.textContent = engagementInfo.level;
+                qualityLevelElement.className = `quality-level ${engagementInfo.class}`;
+            }
+            
+            const qualityDescElement = document.getElementById('qualityDescription');
+            if (qualityDescElement) {
+                qualityDescElement.textContent = engagementInfo.description;
+            }
 
             // 更新認知參與度分析
-            document.getElementById('interactionEfficiency').textContent = engagementData.efficiency;
+            safeUpdateElement('interactionEfficiency', engagementData.efficiency);
             
             // 思考深度
             const thinkingDepth = student.認知思考分數 >= 80 ? "深度" : 
                                   student.認知思考分數 >= 60 ? "中等" : "基礎";
-            document.getElementById('thinkingDepth').textContent = thinkingDepth;
+            safeUpdateElement('thinkingDepth', thinkingDepth);
             
             // 學習一致性
             const consistency = Math.round((parseFloat(student.完成度) + parseFloat(student.出席率)) / 2);
-            document.getElementById('learningConsistency').textContent = `${consistency}%`;
+            safeUpdateElement('learningConsistency', `${consistency}%`);
             
             // 目標達成率
             const postTestForGoal = parseFloat(student.後測成績) || 0;
             const completion = parseFloat(student.完成度) || 0;
             const goalAchievement = Math.round((postTestForGoal + completion) / 2);
-            document.getElementById('goalAchievement').textContent = `${goalAchievement}%`;
+            safeUpdateElement('goalAchievement', `${goalAchievement}%`);
 
             // 更新分析描述
-            document.getElementById('efficiencyDesc').textContent = 
+            safeUpdateElement('efficiencyDesc',
                 engagementData.efficiency >= 1.0 ? "高效學習，每次互動都有收穫" :
                 engagementData.efficiency >= 0.7 ? "學習效率良好，可持續保持" :
-                "建議提升互動品質，深度思考";
+                "建議提升互動品質，深度思考");
 
-            document.getElementById('depthDesc').textContent = 
+            safeUpdateElement('depthDesc',
                 student.認知思考分數 >= 80 ? "展現出色的批判性思維" :
                 student.認知思考分數 >= 60 ? "思考能力發展穩定" :
-                "可以嘗試更深入的思考";
+                "可以嘗試更深入的思考");
 
-            document.getElementById('consistencyDesc').textContent = 
+            safeUpdateElement('consistencyDesc',
                 consistency >= 90 ? "學習行為非常穩定" :
                 consistency >= 70 ? "學習習慣良好" :
-                "建議提升學習規律性";
+                "建議提升學習規律性");
 
-            document.getElementById('achievementDesc').textContent = 
+            safeUpdateElement('achievementDesc',
                 goalAchievement >= 80 ? "優秀地達成學習目標" :
                 goalAchievement >= 60 ? "穩步達成學習目標" :
-                "需要更多努力達成目標";
+                "需要更多努力達成目標");
 
             // 更新問題品質分析（基於認知思考分數分布）
-            updateCognitiveLevels(student);
+            try {
+                updateCognitiveLevels(student);
+            } catch (error) {
+                console.error('更新認知層次失敗:', error);
+            }
             
             // 更新個人化建議
-            updatePersonalizedTips(student, engagementData);
+            try {
+                updatePersonalizedTips(student, engagementData);
+            } catch (error) {
+                console.error('更新個人化建議失敗:', error);
+            }
             
             // 更新學習路徑
-            updateLearningPath(student, engagementData);
+            try {
+                updateLearningPath(student, engagementData);
+            } catch (error) {
+                console.error('更新學習路徑失敗:', error);
+            }
 
             // 計算班級排名
             const sortedStudents = allStudents
@@ -1438,35 +1490,37 @@ def my_function():
             const preTestScore = parseFloat(student.前測成績) || 0;
             const postTestScore = parseFloat(student.後測成績) || 0;
             const improvement = postTestScore - preTestScore;
-            document.getElementById('improvement').textContent = improvement > 0 ? `+${improvement}` : improvement;
+            safeUpdateElement('improvement', improvement > 0 ? `+${improvement}` : improvement);
             
             const improvementIcon = document.getElementById('improvementIcon');
-            if (improvement > 0) {
-                improvementIcon.className = 'kpi-icon icon-green';
-                improvementIcon.textContent = '📈';
-            } else if (improvement < 0) {
-                improvementIcon.className = 'kpi-icon icon-red';
-                improvementIcon.textContent = '📉';
-            } else {
-                improvementIcon.className = 'kpi-icon icon-amber';
-                improvementIcon.textContent = '➡️';
+            if (improvementIcon) {
+                if (improvement > 0) {
+                    improvementIcon.className = 'kpi-icon icon-green';
+                    improvementIcon.textContent = '📈';
+                } else if (improvement < 0) {
+                    improvementIcon.className = 'kpi-icon icon-red';
+                    improvementIcon.textContent = '📉';
+                } else {
+                    improvementIcon.className = 'kpi-icon icon-amber';
+                    improvementIcon.textContent = '➡️';
+                }
             }
             
-            document.getElementById('classRank').textContent = rank;
-            document.getElementById('totalStudents').textContent = allStudents.length;
+            safeUpdateElement('classRank', rank);
+            safeUpdateElement('totalStudents', allStudents.length);
             
-            document.getElementById('cognitiveScore').textContent = student.認知思考分數 || 0;
-            document.getElementById('avgCognitive').textContent = classAvg.cognitiveScore || 0;
+            safeUpdateElement('cognitiveScore', student.認知思考分數 || 0);
+            safeUpdateElement('avgCognitive', classAvg.cognitiveScore || 0);
             
             const completionRate = student.完成度 || "0";
-            document.getElementById('completionRate').textContent = `${completionRate}%`;
-            document.getElementById('avgCompletion').textContent = `${classAvg.completionRate || 0}%`;
+            safeUpdateElement('completionRate', `${completionRate}%`);
+            safeUpdateElement('avgCompletion', `${classAvg.completionRate || 0}%`);
 
             // 更新詳細資料
-            document.getElementById('preTestScore').textContent = student.前測成績 || '--';
-            document.getElementById('postTestScore').textContent = student.後測成績 || '--';
-            document.getElementById('detailInteractionCount').textContent = student.互動次數 || 0;
-            document.getElementById('attendanceRate').textContent = `${student.出席率 || "0"}%`;
+            safeUpdateElement('preTestScore', student.前測成績 || '--');
+            safeUpdateElement('postTestScore', student.後測成績 || '--');
+            safeUpdateElement('detailInteractionCount', student.互動次數 || 0);
+            safeUpdateElement('attendanceRate', `${student.出席率 || "0"}%`);
 
             // 更新總結
             let summaryText, summaryDetail;
@@ -1485,13 +1539,13 @@ def my_function():
                 summaryDetail = `您在班級中排名第${rank}名，建議多進行深度學習。`;
             }
             
-            document.getElementById('summaryText').textContent = summaryText;
-            document.getElementById('summaryDetail').textContent = summaryDetail;
+            safeUpdateElement('summaryText', summaryText);
+            safeUpdateElement('summaryDetail', summaryDetail);
             
             // 更新時間
             const now = new Date();
-            document.getElementById('updateTime').textContent = 
-                `資料更新時間：${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW')}`;
+            safeUpdateElement('updateTime', 
+                `資料更新時間：${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW')}`);
             
             // 檢查並顯示成就
             checkAchievements(student, engagementData);
@@ -1515,6 +1569,12 @@ def my_function():
 
         // 更新問題品質分析
         function updateCognitiveLevels(student) {
+            const levelElements = document.querySelectorAll('.level-item');
+            if (!levelElements || levelElements.length === 0) {
+                console.warn('找不到認知層次元素');
+                return;
+            }
+            
             const cognitiveScore = student.認知思考分數 || 0;
             const interactionCount = student.互動次數 || 0;
             
@@ -1547,7 +1607,6 @@ def my_function():
             };
             
             // 更新顯示
-            const levelElements = document.querySelectorAll('.level-item');
             const levelData = [
                 { count: questions.memory, percentage: levels.memory },
                 { count: questions.understand, percentage: levels.understand },
@@ -1558,30 +1617,50 @@ def my_function():
             ];
             
             levelElements.forEach((el, index) => {
-                el.style.setProperty('--percentage', `${levelData[index].percentage}%`);
-                el.querySelector('.level-count').textContent = `${levelData[index].count}題`;
-                el.querySelector('.level-percentage').textContent = `${levelData[index].percentage}%`;
+                if (index < levelData.length) {
+                    el.style.setProperty('--percentage', `${levelData[index].percentage}%`);
+                    const countElement = el.querySelector('.level-count');
+                    const percentElement = el.querySelector('.level-percentage');
+                    
+                    if (countElement) countElement.textContent = `${levelData[index].count}題`;
+                    if (percentElement) percentElement.textContent = `${levelData[index].percentage}%`;
+                }
             });
         }
 
         // 更新個人化建議
         function updatePersonalizedTips(student, engagementData) {
             const tips = document.querySelector('.personalized-tips');
+            if (!tips) {
+                console.warn('找不到個人化建議區域');
+                return;
+            }
+            
             const cognitiveScore = student.認知思考分數 || 0;
             
             // 根據學生狀況動態調整建議內容
-            if (cognitiveScore < 60) {
-                tips.querySelector('.tip-card:first-child h4').textContent = '建立基礎：從「理解」到「應用」';
-                tips.querySelector('.tip-card:first-child p').textContent = '先確保理解基本概念，再嘗試實際應用。';
-            } else if (cognitiveScore >= 80) {
-                tips.querySelector('.tip-card:first-child h4').textContent = '挑戰進階：從「分析」到「創造」';
-                tips.querySelector('.tip-card:first-child p').textContent = '您已經具備優秀的分析能力，可以嘗試創新思考。';
+            const firstTipTitle = tips.querySelector('.tip-card:first-child h4');
+            const firstTipText = tips.querySelector('.tip-card:first-child p');
+            
+            if (firstTipTitle && firstTipText) {
+                if (cognitiveScore < 60) {
+                    firstTipTitle.textContent = '建立基礎：從「理解」到「應用」';
+                    firstTipText.textContent = '先確保理解基本概念，再嘗試實際應用。';
+                } else if (cognitiveScore >= 80) {
+                    firstTipTitle.textContent = '挑戰進階：從「分析」到「創造」';
+                    firstTipText.textContent = '您已經具備優秀的分析能力，可以嘗試創新思考。';
+                }
             }
         }
 
         // 更新學習路徑
         function updateLearningPath(student, engagementData) {
             const pathTitle = document.querySelector('.path-title span:last-child');
+            if (!pathTitle) {
+                console.warn('找不到學習路徑標題元素');
+                return;
+            }
+            
             const interactionCount = student.互動次數 || 0;
             const cognitiveScore = student.認知思考分數 || 0;
             
@@ -1630,8 +1709,16 @@ def my_function():
         // 顯示成就通知
         function showAchievement(title, desc) {
             const notification = document.getElementById('achievementNotification');
-            document.getElementById('achievementTitle').textContent = title;
-            document.getElementById('achievementDesc').textContent = desc;
+            const titleElement = document.getElementById('achievementTitle');
+            const descElement = document.getElementById('achievementDesc');
+            
+            if (!notification || !titleElement || !descElement) {
+                console.warn('成就通知元素不存在');
+                return;
+            }
+            
+            titleElement.textContent = title;
+            descElement.textContent = desc;
             
             notification.classList.add('show');
             notification.classList.add('achievement-unlocked');
@@ -1650,7 +1737,8 @@ def my_function():
         // 發送到 LINE bot
         function sendToLineBot() {
             // 方案一：直接開啟 LINE 並預填訊息
-            const studentName = document.getElementById('studentName').textContent;
+            const studentNameElement = document.getElementById('studentName');
+            const studentName = studentNameElement ? studentNameElement.textContent : '未知';
             const today = new Date().toLocaleDateString('zh-TW');
             
             // 收集反思內容
@@ -1701,6 +1789,9 @@ ${reflections.nextWeek}
         // 儲存反思到 Google Sheets
         async function saveReflectionToSheet(reflections) {
             try {
+                const studentNameElement = document.getElementById('studentName');
+                const studentName = studentNameElement ? studentNameElement.textContent : '未知';
+                
                 const response = await fetch(`${WEB_APP_URL}?action=saveReflection`, {
                     method: 'POST',
                     mode: 'no-cors', // 避免 CORS 問題
@@ -1709,7 +1800,7 @@ ${reflections.nextWeek}
                     },
                     body: JSON.stringify({
                         studentId: currentStudentId,
-                        studentName: document.getElementById('studentName').textContent,
+                        studentName: studentName,
                         reflections: reflections,
                         timestamp: new Date().toISOString()
                     })
@@ -1723,21 +1814,45 @@ ${reflections.nextWeek}
 
         // 支援 Enter 鍵登入
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('studentInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleLogin();
-                }
-            });
+            console.log('DOM 已載入完成');
+            
+            const studentInput = document.getElementById('studentInput');
+            if (studentInput) {
+                studentInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleLogin();
+                    }
+                });
+            }
+            
+            // 檢查必要元素是否存在
+            const requiredElements = [
+                'loginPage', 'adminPage', 'dashboardPage',
+                'studentInput', 'loginBtn', 'loginLoading'
+            ];
+            
+            const missingElements = requiredElements.filter(id => !document.getElementById(id));
+            if (missingElements.length > 0) {
+                console.error('缺少必要的 HTML 元素:', missingElements);
+            }
         });
 
         // 錯誤處理
         window.addEventListener('error', function(e) {
             console.error('全域錯誤:', e);
+            console.error('錯誤詳情:', {
+                message: e.message,
+                filename: e.filename,
+                line: e.lineno,
+                column: e.colno,
+                error: e.error
+            });
         });
 
         // 處理非同步錯誤
         window.addEventListener('unhandledrejection', function(e) {
             console.error('非同步錯誤:', e);
+            console.error('Promise 錯誤:', e.reason);
         });
     </script>
 </body>
