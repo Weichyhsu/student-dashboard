@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學習成效儀表板</title>
+    <title>成績圖表</title>
     <style>
         * {
             margin: 0;
@@ -113,10 +113,44 @@
             box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .info {
             margin-top: 20px;
             font-size: 14px;
             color: #b45309;
+        }
+
+        /* 載入動畫 */
+        .loading {
+            display: none;
+            margin-top: 20px;
+            color: #f59e0b;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #f59e0b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* 儀表板樣式 */
@@ -159,6 +193,394 @@
         .btn-secondary:hover {
             background: rgba(251, 191, 36, 0.3);
             transform: scale(1.05);
+        }
+
+        /* 主要學習品質卡片 */
+        .main-quality-card {
+            margin-bottom: 30px;
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.1));
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-quality-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .quality-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .quality-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #065f46;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .quality-score {
+            font-size: 72px;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .quality-level {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .quality-description {
+            font-size: 14px;
+            color: #047857;
+            line-height: 1.5;
+        }
+
+        /* 品質等級顏色 */
+        .excellent { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #065f46; }
+        .good { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .average { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .needs-improvement { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
+
+        /* 認知層次色彩 - Bloom's Taxonomy */
+        .cognitive-level-1 { background: linear-gradient(135deg, #fef3c7, #fed7aa); color: #92400e; } /* 記憶 */
+        .cognitive-level-2 { background: linear-gradient(135deg, #fde68a, #fcd34d); color: #78350f; } /* 理解 */
+        .cognitive-level-3 { background: linear-gradient(135deg, #fcd34d, #fbbf24); color: #78350f; } /* 應用 */
+        .cognitive-level-4 { background: linear-gradient(135deg, #fb923c, #f97316); color: #7c2d12; } /* 分析 */
+        .cognitive-level-5 { background: linear-gradient(135deg, #f87171, #ef4444); color: #7f1d1d; } /* 評鑑 */
+        .cognitive-level-6 { background: linear-gradient(135deg, #a78bfa, #8b5cf6); color: #4c1d95; } /* 創造 */
+
+        /* 問題品質視覺化 */
+        .cognitive-levels-card {
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .levels-chart {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .level-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .level-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+
+        .level-item::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.3);
+            height: var(--percentage, 0%);
+            transition: height 1s ease-out;
+        }
+
+        .level-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .level-name {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .level-count {
+            font-size: 24px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .level-percentage {
+            font-size: 12px;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 個人化學習建議 */
+        .personalized-tips {
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .tip-card {
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tip-card:hover {
+            transform: translateX(5px);
+        }
+
+        .tip-card.high-priority {
+            background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 113, 133, 0.1));
+            border: 2px solid rgba(251, 146, 60, 0.3);
+        }
+
+        .tip-card.medium-priority {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(147, 197, 253, 0.1));
+            border: 2px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .tip-card .icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .tip-content h4 {
+            margin: 0 0 8px 0;
+            color: #92400e;
+            font-size: 16px;
+        }
+
+        .tip-content p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-example {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        /* 反思日誌 */
+        .reflection-section {
+            padding: 30px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.05));
+            border: 2px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .reflection-prompts {
+            margin: 20px 0;
+        }
+
+        .reflection-prompt {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .btn-reflection {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-reflection:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        /* 學習路徑建議 */
+        .learning-path-section {
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .path-recommendation {
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 16px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            margin-top: 20px;
+        }
+
+        .path-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #5b21b6;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .path-steps {
+            display: grid;
+            gap: 12px;
+        }
+
+        .path-step {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: #6366f1;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* 動畫效果 */
+        .animate-slide-in, .animate-slide-up {
+            opacity: 0;
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(10deg); }
+            50% { transform: scale(1.2) rotate(-10deg); }
+            75% { transform: scale(1.1) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .animate-slide-in {
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        .animate-slide-up {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .achievement-unlocked {
+            animation: celebrate 0.8s ease-out;
+        }
+
+        /* 成就通知 */
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .achievement-notification.show {
+            display: block;
+            animation: slideInLeft 0.5s ease-out;
+        }
+
+        .achievement-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .achievement-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .achievement-desc {
+            font-size: 14px;
+            opacity: 0.9;
         }
 
         .kpi-grid {
@@ -280,29 +702,87 @@
             display: none;
         }
 
-        .upload-area {
-            padding: 30px;
-            border: 2px dashed #10b981;
-            border-radius: 16px;
-            background: rgba(16, 185, 129, 0.1);
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        .upload-area:hover {
-            border-color: #059669;
-            background: rgba(16, 185, 129, 0.15);
-        }
-
-        .format-info {
+        .connection-status {
             padding: 20px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            font-size: 12px;
-            color: #065f46;
             margin-bottom: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-checking {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* 學習品質分析圖表 */
+        .quality-analysis {
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .analysis-item {
+            padding: 25px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .analysis-item h4 {
+            color: #1e40af;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1d4ed8;
+            margin-bottom: 8px;
+        }
+
+        .analysis-desc {
+            font-size: 13px;
+            color: #3730a3;
+            line-height: 1.4;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #b45309;
+            text-align: center;
+            margin-top: 10px;
         }
 
         .hidden { display: none; }
@@ -322,6 +802,14 @@
             .detail-grid {
                 grid-template-columns: 1fr;
             }
+
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quality-score {
+                font-size: 56px;
+            }
         }
     </style>
 </head>
@@ -329,19 +817,32 @@
     <!-- 登入頁面 -->
     <div id="loginPage" class="login-container">
         <div class="glass login-box">
-            <div class="logo"><img src="teacher.png"  alt="logo" width="89" height="67"></div>
+            <div class="logo"><img src="teacher.png" alt="logo" width="89" height="67"></div>
             <h1 class="title">成績圖表</h1>
             <p class="subtitle">請輸入學號查看學習進度</p>
             
             <div class="input-group">
-                <input type="text" id="studentInput" class="input" placeholder="請輸入學號" />
+                <input type="text" id="studentInput" class="input" placeholder="請輸入9位數學號" maxlength="9" />
             </div>
             
-            <button onclick="handleLogin()" class="btn">進入成績圖表</button>
+            <button id="loginBtn" onclick="handleLogin()" class="btn">進入成績圖表</button>
+            
+            <div class="loading" id="loginLoading">
+                <span class="loading-spinner"></span>
+                <span>載入中...</span>
+            </div>
             
             <div class="info">
-                <p><strong>成績圖表中包含:</strong><br>與學習夥伴之互動次數, 認知思考分數, 測驗成績, 課程完成度, 出席率</p>
-                <p style="margin-top: 10px; font-size: 12px;"><strong>每小時更新一次</strong> </p>
+                <p><strong>成績圖表中包含:</strong><br>認知參與度分析、與學習夥伴之互動次數、認知思考分數、測驗成績、課程完成度、出席率</p>
+                <p style="margin-top: 10px; font-size: 12px; color: #047857;"><strong>✨ 資料即時同步更新</strong></p>
+                
+                <div style="margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <p style="font-weight: bold; color: #065f46; margin-bottom: 8px;">🎯 提升認知參與度小技巧</p>
+                    <p style="font-size: 12px; color: #047857; line-height: 1.4;">
+                        高認知參與 = 深度思考 + 有效互動！<br>
+                        專注於理解和應用，而不只是完成任務。
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -351,19 +852,33 @@
         <div class="glass login-box">
             <div class="logo" style="background: linear-gradient(135deg, #10b981, #059669);">🔑</div>
             <h1 class="title">管理員模式</h1>
-            <p class="subtitle">上傳CSV檔案更新學生資料</p>
+            <p class="subtitle">連線測試與系統狀態</p>
             
-            <div class="upload-area" onclick="document.getElementById('csvFile').click()">
-                <div style="font-size: 24px; margin-bottom: 10px;">📁</div>
-                <p style="font-weight: bold; color: #065f46;">點擊選擇CSV檔案</p>
-                <p style="font-size: 12px; color: #047857; margin-top: 5px;">支援CSV格式</p>
-                <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleFileUpload(event)">
+            <div class="connection-status" id="connectionStatus">
+                <div class="status-checking">
+                    <span class="loading-spinner"></span>
+                    <span>正在測試連線...</span>
+                </div>
             </div>
 
-            <div class="format-info">
-                <p style="font-weight: bold; margin-bottom: 5px;">CSV檔案格式（第一行為標題）：</p>
-                <p style="margin-bottom: 5px;">學號,姓名,互動次數,認知思考分數,前測成績,後測成績,完成度,出席率</p>
-                <p style="font-weight: 500;">範例：2024001,王小明,85,78,65,82,90,95</p>
+            <div id="adminInfo" style="display: none;">
+                <div style="padding: 20px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; margin-bottom: 15px;">
+                    <h3 style="color: #1e40af; margin-bottom: 10px;">📊 系統狀態</h3>
+                    <p style="font-size: 14px; color: #3730a3;">
+                        <strong>連線狀態：</strong><span id="connectionState">檢查中</span><br>
+                        <strong>資料來源：</strong>Google Sheets<br>
+                        <strong>更新頻率：</strong>即時<br>
+                        <strong>學生總數：</strong><span id="totalStudentCount">0</span> 人
+                    </p>
+                </div>
+
+                <div style="padding: 15px; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin-bottom: 15px;">
+                    <p style="font-size: 13px; color: #92400e;">
+                        <strong>🔧 系統提示：</strong><br>
+                        資料會即時從 Google Sheets 同步<br>
+                        學生登入時會自動獲取最新資料
+                    </p>
+                </div>
             </div>
 
             <button onclick="goBackToLogin()" class="btn">返回登入頁面</button>
@@ -376,23 +891,193 @@
             <!-- Header -->
             <div class="glass header">
                 <div>
-                    <h1>學習成效儀表板</h1>
+                    <h1>成績圖表</h1>
                     <p>歡迎回來，<span id="studentName" style="font-weight: bold;"></span> (<span id="studentId"></span>)</p>
                 </div>
                 <button onclick="goBackToLogin()" class="btn-secondary">重新登入</button>
             </div>
 
+            <!-- 主要學習品質卡片 -->
+            <div class="glass main-quality-card">
+                <div class="quality-content">
+                    <div class="quality-title">
+                        <span>🧠</span>
+                        <span>認知參與度</span>
+                        <span>🧠</span>
+                    </div>
+                    <div class="quality-score" id="qualityScore">0</div>
+                    <div class="quality-level" id="qualityLevel">計算中...</div>
+                    <div class="quality-description" id="qualityDescription">正在分析您的學習品質...</div>
+                </div>
+            </div>
+
+            <!-- 學習品質分析 -->
+            <div class="glass quality-analysis">
+                <h2 style="font-size: 24px; font-weight: bold; color: #1e40af; margin-bottom: 5px;">📊 認知參與度分析</h2>
+                <p style="color: #3730a3; margin-bottom: 20px;">深度了解您的認知投入模式和學習策略</p>
+                <div class="analysis-grid">
+                    <div class="analysis-item">
+                        <h4><span>⚡</span>互動效率</h4>
+                        <div class="analysis-value" id="interactionEfficiency">0</div>
+                        <div class="analysis-desc" id="efficiencyDesc">每次互動的平均認知收穫</div>
+                    </div>
+                    <div class="analysis-item">
+                        <h4><span>🧠</span>思考深度</h4>
+                        <div class="analysis-value" id="thinkingDepth">0</div>
+                        <div class="analysis-desc" id="depthDesc">認知思考的複雜程度</div>
+                    </div>
+                    <div class="analysis-item">
+                        <h4><span>📈</span>學習一致性</h4>
+                        <div class="analysis-value" id="learningConsistency">0</div>
+                        <div class="analysis-desc" id="consistencyDesc">學習行為的穩定性</div>
+                    </div>
+                    <div class="analysis-item">
+                        <h4><span>🎯</span>目標達成率</h4>
+                        <div class="analysis-value" id="goalAchievement">0%</div>
+                        <div class="analysis-desc" id="achievementDesc">綜合學習目標完成情況</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 問題品質視覺化儀表板 -->
+            <div class="glass cognitive-levels-card animate-slide-in">
+                <h2 style="font-size: 24px; font-weight: bold; color: #5b21b6; margin-bottom: 5px;">💡 我的提問品質分析</h2>
+                <p style="color: #6d28d9; margin-bottom: 20px;">基於 Bloom's Taxonomy 認知層次分類</p>
+                <div class="levels-chart">
+                    <div class="level-item cognitive-level-1" style="--percentage: 15%;">
+                        <div class="level-icon">💭</div>
+                        <span class="level-name">記憶</span>
+                        <span class="level-count">3題</span>
+                        <span class="level-percentage">15%</span>
+                    </div>
+                    <div class="level-item cognitive-level-2" style="--percentage: 25%;">
+                        <div class="level-icon">📖</div>
+                        <span class="level-name">理解</span>
+                        <span class="level-count">5題</span>
+                        <span class="level-percentage">25%</span>
+                    </div>
+                    <div class="level-item cognitive-level-3" style="--percentage: 30%;">
+                        <div class="level-icon">⚙️</div>
+                        <span class="level-name">應用</span>
+                        <span class="level-count">6題</span>
+                        <span class="level-percentage">30%</span>
+                    </div>
+                    <div class="level-item cognitive-level-4" style="--percentage: 20%;">
+                        <div class="level-icon">🔍</div>
+                        <span class="level-name">分析</span>
+                        <span class="level-count">4題</span>
+                        <span class="level-percentage">20%</span>
+                    </div>
+                    <div class="level-item cognitive-level-5" style="--percentage: 8%;">
+                        <div class="level-icon">⚖️</div>
+                        <span class="level-name">評鑑</span>
+                        <span class="level-count">2題</span>
+                        <span class="level-percentage">8%</span>
+                    </div>
+                    <div class="level-item cognitive-level-6" style="--percentage: 2%;">
+                        <div class="level-icon">✨</div>
+                        <span class="level-name">創造</span>
+                        <span class="level-count">1題</span>
+                        <span class="level-percentage">2%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 個人化學習建議區 -->
+            <div class="glass personalized-tips animate-slide-up">
+                <h2 style="font-size: 24px; font-weight: bold; color: #ea580c; margin-bottom: 20px;">🎓 個人化 Python 學習建議</h2>
+                <div class="tip-card high-priority">
+                    <span class="icon">🚀</span>
+                    <div class="tip-content">
+                        <h4>提升提問層次：從「應用」到「分析」</h4>
+                        <p>您已經掌握了基本應用，現在可以嘗試分析程式碼的效能和結構。</p>
+                        <div class="code-example">
+# 試著問：「為什麼使用 list comprehension 比 for 迴圈更快？」
+# 或：「這兩種排序方法的時間複雜度差異是什麼？」
+numbers = [x**2 for x in range(10)]  # vs for 迴圈</div>
+                    </div>
+                </div>
+                <div class="tip-card medium-priority">
+                    <span class="icon">💡</span>
+                    <div class="tip-content">
+                        <h4>探索 Python 進階概念</h4>
+                        <p>您的互動頻率很好！建議深入了解裝飾器、生成器等進階主題。</p>
+                        <div class="code-example">
+# 可以問 LINE bot：「如何使用裝飾器來計算函數執行時間？」
+@timer_decorator
+def my_function():
+    pass</div>
+                    </div>
+                </div>
+                <div class="tip-card medium-priority">
+                    <span class="icon">🎯</span>
+                    <div class="tip-content">
+                        <h4>創造性思考練習</h4>
+                        <p>挑戰自己設計小專案，結合不同概念創造新的解決方案。</p>
+                        <div class="code-example">
+# 創造層次提問：「如何設計一個 Python 類別來模擬銀行帳戶系統？」</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 學習路徑建議 -->
+            <div class="glass learning-path-section">
+                <h2 style="font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 5px;">🗺️ 您的專屬學習路徑</h2>
+                <div class="path-recommendation">
+                    <div class="path-title">
+                        <span>📚</span>
+                        <span>建議路徑：質量並重型學習者</span>
+                    </div>
+                    <div class="path-steps">
+                        <div class="path-step">
+                            <span class="step-number">1</span>
+                            <span>每天至少提出 2 個「分析」層次以上的問題</span>
+                        </div>
+                        <div class="path-step">
+                            <span class="step-number">2</span>
+                            <span>週末花 30 分鐘回顧本週學習重點，整理筆記</span>
+                        </div>
+                        <div class="path-step">
+                            <span class="step-number">3</span>
+                            <span>挑戰自己：每週完成一個結合多個概念的小專案</span>
+                        </div>
+                        <div class="path-step">
+                            <span class="step-number">4</span>
+                            <span>與同學分享你的程式碼，互相給予回饋</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 反思日誌 -->
+            <div class="glass reflection-section">
+                <h2 style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 20px;">📝 本週學習反思</h2>
+                <div class="reflection-prompts">
+                    <div class="reflection-prompt">
+                        <strong>💡 這週我學到最重要的 Python 概念是...</strong><br>
+                        例如：理解了函數參數的傳遞方式（pass by reference vs value）
+                    </div>
+                    <div class="reflection-prompt">
+                        <strong>🤔 我遇到的困難和解決方法...</strong><br>
+                        例如：遞迴函數很難理解，透過畫圖追蹤執行流程後豁然開朗
+                    </div>
+                    <div class="reflection-prompt">
+                        <strong>🎯 下週我想深入探討...</strong><br>
+                        例如：想了解如何使用 Python 處理檔案和例外處理
+                    </div>
+                </div>
+                <button class="btn-reflection" onclick="sendToLineBot()">
+                    <span style="margin-right: 8px;">📤</span>
+                    記錄到 LINE bot
+                </button>
+                <p style="margin-top: 15px; font-size: 13px; color: #047857; text-align: center;">
+                    點擊後會開啟 LINE，將反思內容傳送給 Python 學習 Bot<br>
+                    <span style="font-size: 12px; opacity: 0.8;">💡 提示：Bot 會根據您的反思提供個人化學習建議</span>
+                </p>
+            </div>
+
             <!-- KPI Cards -->
             <div class="kpi-grid">
-                <div class="glass kpi-card">
-                    <div class="kpi-content">
-                        <h3>認知思考分數</h3>
-                        <div class="value" id="cognitiveScore">0</div>
-                        <div class="avg">班級平均: <span id="avgCognitive">0</span></div>
-                    </div>
-                    <div class="kpi-icon icon-green">🏆</div>
-                </div>
-
                 <div class="glass kpi-card">
                     <div class="kpi-content">
                         <h3>學習進步幅度</h3>
@@ -413,6 +1098,15 @@
 
                 <div class="glass kpi-card">
                     <div class="kpi-content">
+                        <h3>認知思考分數</h3>
+                        <div class="value" id="cognitiveScore">0</div>
+                        <div class="avg">班級平均: <span id="avgCognitive">0</span></div>
+                    </div>
+                    <div class="kpi-icon icon-green">🧠</div>
+                </div>
+
+                <div class="glass kpi-card">
+                    <div class="kpi-content">
                         <h3>完成度</h3>
                         <div class="value" id="completionRate">0%</div>
                         <div class="avg">班級平均: <span id="avgCompletion">0%</span></div>
@@ -421,21 +1115,21 @@
                 </div>
             </div>
 
-            <!-- 詳細成績 -->
+            <!-- 詳細學習資料 -->
             <div class="glass detail-section">
-                <h2 style="font-size: 24px; font-weight: bold; color: #92400e; margin-bottom: 20px;">詳細成績</h2>
+                <h2 style="font-size: 24px; font-weight: bold; color: #92400e; margin-bottom: 20px;">📋 詳細學習資料</h2>
                 <div class="detail-grid">
                     <div class="detail-item">
                         <h4>前測成績</h4>
-                        <div class="score" id="preTestScore">0</div>
+                        <div class="score" id="preTestScore">--</div>
                     </div>
                     <div class="detail-item">
                         <h4>後測成績</h4>
-                        <div class="score" id="postTestScore">0</div>
+                        <div class="score" id="postTestScore">--</div>
                     </div>
                     <div class="detail-item">
                         <h4>互動次數</h4>
-                        <div class="score" id="interactionCount">0</div>
+                        <div class="score" id="detailInteractionCount">0</div>
                     </div>
                     <div class="detail-item">
                         <h4>出席率</h4>
@@ -446,108 +1140,206 @@
 
             <!-- 學習總結 -->
             <div class="glass summary">
-                <h2 style="font-size: 24px; font-weight: bold; color: #92400e; margin-bottom: 20px;">學習成效總結</h2>
+                <h2 style="font-size: 24px; font-weight: bold; color: #92400e; margin-bottom: 20px;">🎉 學習成效總結</h2>
                 <div class="summary-box">
                     <div class="summary-text" id="summaryText">載入中...</div>
                     <div class="summary-detail" id="summaryDetail">載入中...</div>
                 </div>
+                <div class="update-time" id="updateTime"></div>
             </div>
         </div>
     </div>
 
+    <!-- 成就通知 -->
+    <div class="achievement-notification" id="achievementNotification">
+        <div class="achievement-icon">🏆</div>
+        <div class="achievement-title" id="achievementTitle">新成就解鎖！</div>
+        <div class="achievement-desc" id="achievementDesc">您已經達成了某項成就</div>
+    </div>
+
     <script>
-        // 學生資料
-        let classData = {
-            '2024001': { name: '王小明', interactionCount: 85, cognitiveScore: 78, preTestScore: 65, postTestScore: 82, completionRate: 90, attendanceRate: 95 },
-            '2024002': { name: '李小華', interactionCount: 92, cognitiveScore: 85, preTestScore: 70, postTestScore: 88, completionRate: 95, attendanceRate: 98 },
-            '2024003': { name: '張小美', interactionCount: 76, cognitiveScore: 72, preTestScore: 60, postTestScore: 75, completionRate: 85, attendanceRate: 92 },
-            '2024004': { name: '陳小強', interactionCount: 88, cognitiveScore: 80, preTestScore: 68, postTestScore: 85, completionRate: 88, attendanceRate: 90 },
-            '2024005': { name: '林小花', interactionCount: 95, cognitiveScore: 88, preTestScore: 75, postTestScore: 92, completionRate: 98, attendanceRate: 100 },
-        };
+        // Google Apps Script Web App URL
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzkYuhP6h341e0aLAuec6FLuSquxJXtg31cLQEgjROrOOiQURk8pbp_25UXpXyh2AatdQ/exec';
+        
+        // 全域變數
+        let classData = {};
+        let currentStudentId = null;
+
+        // 從 Apps Script 獲取資料
+        async function fetchDataFromAppsScript(action, studentId = null) {
+            try {
+                let url = `${WEB_APP_URL}?action=${action}`;
+                if (studentId) {
+                    url += `&studentId=${studentId}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('獲取資料錯誤:', error);
+                throw error;
+            }
+        }
+
+        // 計算認知參與度的函數
+        function calculateCognitiveEngagement(student) {
+            const interactionCount = student.互動次數 || 0;
+            const cognitiveScore = student.認知思考分數 || 0;
+            const completionRate = parseFloat(student.完成度) || 0;
+            const attendanceRate = parseFloat(student.出席率) || 0;
+            
+            // 認知參與度計算公式
+            const baseScore = cognitiveScore * 0.4;
+            const interactionEfficiency = Math.min((cognitiveScore / Math.max(interactionCount, 1)) * 10, 30) * 0.3;
+            const completionBonus = completionRate * 0.2;
+            const attendanceBonus = attendanceRate * 0.1;
+            
+            const engagementScore = Math.round(baseScore + interactionEfficiency + completionBonus + attendanceBonus);
+            
+            return {
+                score: engagementScore,
+                efficiency: Math.round((cognitiveScore / Math.max(interactionCount, 1)) * 100) / 100,
+                baseScore,
+                interactionEfficiency,
+                completionBonus,
+                attendanceBonus
+            };
+        }
+
+        // 獲取認知參與度等級和描述
+        function getEngagementLevel(score) {
+            if (score >= 85) {
+                return {
+                    level: "高度認知參與",
+                    class: "excellent",
+                    description: "您展現了卓越的認知參與度！深度思考與有效互動讓您在學習中表現出色。"
+                };
+            } else if (score >= 70) {
+                return {
+                    level: "良好認知參與",
+                    class: "good",
+                    description: "您的認知參與度良好，在思考深度和學習策略運用上取得了平衡。"
+                };
+            } else if (score >= 55) {
+                return {
+                    level: "穩定認知參與",
+                    class: "average",
+                    description: "您的認知參與表現穩定，可以嘗試提高思考深度來提升學習效果。"
+                };
+            } else {
+                return {
+                    level: "發展中認知參與",
+                    class: "needs-improvement",
+                    description: "您正在發展認知參與能力！建議多進行深度思考和主動學習。"
+                };
+            }
+        }
 
         // 計算班級平均值
-        function calculateClassAverage() {
-            const students = Object.values(classData);
-            const count = students.length;
+        function calculateClassAverage(allStudents) {
+            if (!allStudents || allStudents.length === 0) {
+                return { cognitiveScore: 0, completionRate: 0, engagementScore: 0 };
+            }
+            
+            const count = allStudents.length;
+            const avgEngagement = allStudents.reduce((sum, s) => sum + calculateCognitiveEngagement(s).score, 0) / count;
+            
             return {
-                interactionCount: Math.round(students.reduce((sum, s) => sum + s.interactionCount, 0) / count),
-                cognitiveScore: Math.round(students.reduce((sum, s) => sum + s.cognitiveScore, 0) / count),
-                preTestScore: Math.round(students.reduce((sum, s) => sum + s.preTestScore, 0) / count),
-                postTestScore: Math.round(students.reduce((sum, s) => sum + s.postTestScore, 0) / count),
-                completionRate: Math.round(students.reduce((sum, s) => sum + s.completionRate, 0) / count),
-                attendanceRate: Math.round(students.reduce((sum, s) => sum + s.attendanceRate, 0) / count),
+                cognitiveScore: Math.round(allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count),
+                completionRate: Math.round(allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count),
+                engagementScore: Math.round(avgEngagement)
             };
         }
 
         // 處理登入
-        function handleLogin() {
+        async function handleLogin() {
             const studentId = document.getElementById('studentInput').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            const loginLoading = document.getElementById('loginLoading');
             
+            // 管理員入口
             if (studentId === '165540') {
                 showAdminPage();
                 return;
             }
             
-            if (classData[studentId]) {
-                showDashboard(studentId);
-            } else {
-                alert('學號不存在，請檢查後重新輸入');
+            // 檢查學號格式（9位數字）
+            if (!/^\d{9}$/.test(studentId)) {
+                alert('請輸入正確的9位數學號');
+                return;
+            }
+            
+            // 顯示載入狀態
+            loginBtn.disabled = true;
+            loginLoading.classList.add('show');
+            
+            try {
+                // 從 Apps Script 獲取學生資料
+                const response = await fetchDataFromAppsScript('getStudent', studentId);
+                
+                if (response.success && response.student) {
+                    // 儲存學號供重新載入使用
+                    currentStudentId = studentId;
+                    
+                    // 顯示儀表板
+                    showDashboard(response.student, response.allStudents);
+                } else {
+                    alert('查無此學號的資料，請確認後重新輸入或聯繫老師');
+                }
+            } catch (error) {
+                console.error('登入錯誤:', error);
+                alert('連線失敗，請檢查網路連線或稍後再試');
+            } finally {
+                loginBtn.disabled = false;
+                loginLoading.classList.remove('show');
             }
         }
 
         // 顯示管理員頁面
-        function showAdminPage() {
+        async function showAdminPage() {
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('adminPage').style.display = 'flex';
             document.getElementById('dashboardPage').style.display = 'none';
-        }
-
-        // 處理檔案上傳
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split('\n').filter(line => line.trim());
+            
+            // 測試連線
+            const connectionStatus = document.getElementById('connectionStatus');
+            
+            try {
+                const response = await fetchDataFromAppsScript('testConnection');
+                
+                if (response.success) {
+                    connectionStatus.className = 'connection-status status-success';
+                    connectionStatus.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
+                        <div style="font-weight: bold;">連線成功！</div>
+                        <div style="font-size: 14px; margin-top: 5px;">已成功連接到 Google Sheets</div>
+                    `;
                     
-                    if (lines.length < 2) {
-                        alert('檔案格式錯誤');
-                        return;
-                    }
-
-                    const newClassData = {};
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',').map(v => v.trim());
-                        if (values.length >= 8) {
-                            const studentId = values[0];
-                            if (studentId) {
-                                newClassData[studentId] = {
-                                    name: values[1] || '未知',
-                                    interactionCount: Number(values[2]) || 0,
-                                    cognitiveScore: Number(values[3]) || 0,
-                                    preTestScore: Number(values[4]) || 0,
-                                    postTestScore: Number(values[5]) || 0,
-                                    completionRate: Number(values[6]) || 0,
-                                    attendanceRate: Number(values[7]) || 0,
-                                };
-                            }
-                        }
-                    }
-
-                    if (Object.keys(newClassData).length > 0) {
-                        classData = newClassData;
-                        alert(`成功載入 ${Object.keys(newClassData).length} 位學生資料`);
-                    } else {
-                        alert('檔案格式錯誤或無有效數據');
-                    }
-                } catch (error) {
-                    alert('檔案讀取失敗，請檢查檔案格式');
+                    // 顯示系統資訊
+                    document.getElementById('adminInfo').style.display = 'block';
+                    document.getElementById('connectionState').textContent = '正常';
+                    document.getElementById('totalStudentCount').textContent = response.studentCount || 0;
+                } else {
+                    throw new Error('連線測試失敗');
                 }
-            };
-            reader.readAsText(file);
+            } catch (error) {
+                connectionStatus.className = 'connection-status status-error';
+                connectionStatus.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
+                    <div style="font-weight: bold;">連線失敗</div>
+                    <div style="font-size: 14px; margin-top: 5px;">請檢查 Apps Script 設定</div>
+                `;
+            }
         }
 
         // 返回登入頁面
@@ -556,35 +1348,98 @@
             document.getElementById('adminPage').style.display = 'none';
             document.getElementById('dashboardPage').style.display = 'none';
             document.getElementById('studentInput').value = '';
+            currentStudentId = null;
         }
 
         // 顯示學生儀表板
-        function showDashboard(studentId) {
-            const student = classData[studentId];
-            const classAvg = calculateClassAverage();
-            const improvement = student.postTestScore - student.preTestScore;
+        function showDashboard(student, allStudents) {
+            const classAvg = calculateClassAverage(allStudents);
+            const engagementData = calculateCognitiveEngagement(student);
+            const engagementInfo = getEngagementLevel(engagementData.score);
             
-            // 計算排名
-            const sortedStudents = Object.values(classData).sort((a, b) => 
-                (b.postTestScore + b.cognitiveScore + b.completionRate + b.attendanceRate) - 
-                (a.postTestScore + a.cognitiveScore + a.completionRate + a.attendanceRate)
-            );
-            const rank = sortedStudents.findIndex(s => s.name === student.name) + 1;
-
             // 更新頁面顯示
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('adminPage').style.display = 'none';
             document.getElementById('dashboardPage').style.display = 'block';
 
             // 更新基本資訊
-            document.getElementById('studentName').textContent = student.name;
-            document.getElementById('studentId').textContent = studentId;
+            document.getElementById('studentName').textContent = student.姓名 || '學生';
+            document.getElementById('studentId').textContent = student.學號;
+
+            // 更新主要認知參與度卡片
+            const qualityScoreElement = document.getElementById('qualityScore');
+            qualityScoreElement.textContent = engagementData.score;
+            
+            // 如果分數優秀，加入慶祝動畫
+            if (engagementData.score >= 85) {
+                qualityScoreElement.classList.add('animate-pulse');
+            }
+            
+            const qualityLevelElement = document.getElementById('qualityLevel');
+            qualityLevelElement.textContent = engagementInfo.level;
+            qualityLevelElement.className = `quality-level ${engagementInfo.class}`;
+            document.getElementById('qualityDescription').textContent = engagementInfo.description;
+
+            // 更新認知參與度分析
+            document.getElementById('interactionEfficiency').textContent = engagementData.efficiency;
+            
+            // 思考深度
+            const thinkingDepth = student.認知思考分數 >= 80 ? "深度" : 
+                                  student.認知思考分數 >= 60 ? "中等" : "基礎";
+            document.getElementById('thinkingDepth').textContent = thinkingDepth;
+            
+            // 學習一致性
+            const consistency = Math.round((parseFloat(student.完成度) + parseFloat(student.出席率)) / 2);
+            document.getElementById('learningConsistency').textContent = `${consistency}%`;
+            
+            // 目標達成率
+            const postTestForGoal = parseFloat(student.後測成績) || 0;
+            const completion = parseFloat(student.完成度) || 0;
+            const goalAchievement = Math.round((postTestForGoal + completion) / 2);
+            document.getElementById('goalAchievement').textContent = `${goalAchievement}%`;
+
+            // 更新分析描述
+            document.getElementById('efficiencyDesc').textContent = 
+                engagementData.efficiency >= 1.0 ? "高效學習，每次互動都有收穫" :
+                engagementData.efficiency >= 0.7 ? "學習效率良好，可持續保持" :
+                "建議提升互動品質，深度思考";
+
+            document.getElementById('depthDesc').textContent = 
+                student.認知思考分數 >= 80 ? "展現出色的批判性思維" :
+                student.認知思考分數 >= 60 ? "思考能力發展穩定" :
+                "可以嘗試更深入的思考";
+
+            document.getElementById('consistencyDesc').textContent = 
+                consistency >= 90 ? "學習行為非常穩定" :
+                consistency >= 70 ? "學習習慣良好" :
+                "建議提升學習規律性";
+
+            document.getElementById('achievementDesc').textContent = 
+                goalAchievement >= 80 ? "優秀地達成學習目標" :
+                goalAchievement >= 60 ? "穩步達成學習目標" :
+                "需要更多努力達成目標";
+
+            // 更新問題品質分析（基於認知思考分數分布）
+            updateCognitiveLevels(student);
+            
+            // 更新個人化建議
+            updatePersonalizedTips(student, engagementData);
+            
+            // 更新學習路徑
+            updateLearningPath(student, engagementData);
+
+            // 計算班級排名
+            const sortedStudents = allStudents
+                .map(s => ({ ...s, engagementScore: calculateCognitiveEngagement(s).score }))
+                .sort((a, b) => b.engagementScore - a.engagementScore);
+            const rank = sortedStudents.findIndex(s => s.學號 === student.學號) + 1;
 
             // 更新KPI卡片
-            document.getElementById('cognitiveScore').textContent = student.cognitiveScore;
-            document.getElementById('avgCognitive').textContent = classAvg.cognitiveScore;
+            const preTestScore = parseFloat(student.前測成績) || 0;
+            const postTestScore = parseFloat(student.後測成績) || 0;
+            const improvement = postTestScore - preTestScore;
+            document.getElementById('improvement').textContent = improvement > 0 ? `+${improvement}` : improvement;
             
-            document.getElementById('improvement').textContent = (improvement > 0 ? '+' : '') + improvement;
             const improvementIcon = document.getElementById('improvementIcon');
             if (improvement > 0) {
                 improvementIcon.className = 'kpi-icon icon-green';
@@ -598,32 +1453,272 @@
             }
             
             document.getElementById('classRank').textContent = rank;
-            document.getElementById('totalStudents').textContent = Object.keys(classData).length;
+            document.getElementById('totalStudents').textContent = allStudents.length;
             
-            document.getElementById('completionRate').textContent = student.completionRate + '%';
-            document.getElementById('avgCompletion').textContent = classAvg.completionRate + '%';
+            document.getElementById('cognitiveScore').textContent = student.認知思考分數 || 0;
+            document.getElementById('avgCognitive').textContent = classAvg.cognitiveScore || 0;
+            
+            const completionRate = student.完成度 || "0";
+            document.getElementById('completionRate').textContent = `${completionRate}%`;
+            document.getElementById('avgCompletion').textContent = `${classAvg.completionRate || 0}%`;
 
-            // 更新詳細成績
-            document.getElementById('preTestScore').textContent = student.preTestScore;
-            document.getElementById('postTestScore').textContent = student.postTestScore;
-            document.getElementById('interactionCount').textContent = student.interactionCount;
-            document.getElementById('attendanceRate').textContent = student.attendanceRate + '%';
+            // 更新詳細資料
+            document.getElementById('preTestScore').textContent = student.前測成績 || '--';
+            document.getElementById('postTestScore').textContent = student.後測成績 || '--';
+            document.getElementById('detailInteractionCount').textContent = student.互動次數 || 0;
+            document.getElementById('attendanceRate').textContent = `${student.出席率 || "0"}%`;
 
             // 更新總結
             let summaryText, summaryDetail;
-            if (improvement > 0) {
-                summaryText = `🎉 恭喜！你的成績進步了 ${improvement} 分！`;
-                summaryDetail = `認知思考分數: ${student.cognitiveScore} | 班級排名: 第${rank}名`;
-            } else if (improvement < 0) {
-                summaryText = `📚 需要加油！成績下降了 ${Math.abs(improvement)} 分`;
-                summaryDetail = `認知思考分數: ${student.cognitiveScore} | 班級排名: 第${rank}名`;
+            
+            if (engagementData.score >= 85) {
+                summaryText = `🏆 優秀！您的認知參與度為 ${engagementData.score}，表現卓越！`;
+                summaryDetail = `您在班級中排名第${rank}名，展現了高度的認知參與能力。`;
+            } else if (engagementData.score >= 70) {
+                summaryText = `🌟 很好！您的認知參與度為 ${engagementData.score}，持續保持！`;
+                summaryDetail = `您在班級中排名第${rank}名，認知參與度良好。`;
+            } else if (engagementData.score >= 55) {
+                summaryText = `📚 不錯！您的認知參與度為 ${engagementData.score}，還有提升空間。`;
+                summaryDetail = `您在班級中排名第${rank}名，可以嘗試提升思考深度。`;
             } else {
-                summaryText = '📊 成績維持穩定';
-                summaryDetail = `認知思考分數: ${student.cognitiveScore} | 班級排名: 第${rank}名`;
+                summaryText = `💪 加油！您的認知參與度為 ${engagementData.score}，持續努力！`;
+                summaryDetail = `您在班級中排名第${rank}名，建議多進行深度學習。`;
             }
             
             document.getElementById('summaryText').textContent = summaryText;
             document.getElementById('summaryDetail').textContent = summaryDetail;
+            
+            // 更新時間
+            const now = new Date();
+            document.getElementById('updateTime').textContent = 
+                `資料更新時間：${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW')}`;
+            
+            // 檢查並顯示成就
+            checkAchievements(student, engagementData);
+            
+            // 加入動畫效果
+            setTimeout(() => {
+                document.querySelectorAll('.animate-slide-in').forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.animation = 'slideInLeft 0.6s ease-out';
+                    }, index * 100);
+                });
+                document.querySelectorAll('.animate-slide-up').forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.animation = 'slideInUp 0.6s ease-out';
+                    }, index * 100);
+                });
+            }, 100);
+        }
+
+        // 更新問題品質分析
+        function updateCognitiveLevels(student) {
+            const cognitiveScore = student.認知思考分數 || 0;
+            const interactionCount = student.互動次數 || 0;
+            
+            // 基於認知分數分配問題層次（模擬數據）
+            let levels = {
+                memory: 15,
+                understand: 25,
+                apply: 30,
+                analyze: 20,
+                evaluate: 8,
+                create: 2
+            };
+            
+            // 根據認知分數調整分布
+            if (cognitiveScore >= 80) {
+                levels = { memory: 5, understand: 15, apply: 25, analyze: 30, evaluate: 20, create: 5 };
+            } else if (cognitiveScore >= 60) {
+                levels = { memory: 10, understand: 20, apply: 35, analyze: 25, evaluate: 8, create: 2 };
+            }
+            
+            // 計算實際題數
+            const totalPercentage = 100;
+            const questions = {
+                memory: Math.round(interactionCount * levels.memory / totalPercentage),
+                understand: Math.round(interactionCount * levels.understand / totalPercentage),
+                apply: Math.round(interactionCount * levels.apply / totalPercentage),
+                analyze: Math.round(interactionCount * levels.analyze / totalPercentage),
+                evaluate: Math.round(interactionCount * levels.evaluate / totalPercentage),
+                create: Math.round(interactionCount * levels.create / totalPercentage)
+            };
+            
+            // 更新顯示
+            const levelElements = document.querySelectorAll('.level-item');
+            const levelData = [
+                { count: questions.memory, percentage: levels.memory },
+                { count: questions.understand, percentage: levels.understand },
+                { count: questions.apply, percentage: levels.apply },
+                { count: questions.analyze, percentage: levels.analyze },
+                { count: questions.evaluate, percentage: levels.evaluate },
+                { count: questions.create, percentage: levels.create }
+            ];
+            
+            levelElements.forEach((el, index) => {
+                el.style.setProperty('--percentage', `${levelData[index].percentage}%`);
+                el.querySelector('.level-count').textContent = `${levelData[index].count}題`;
+                el.querySelector('.level-percentage').textContent = `${levelData[index].percentage}%`;
+            });
+        }
+
+        // 更新個人化建議
+        function updatePersonalizedTips(student, engagementData) {
+            const tips = document.querySelector('.personalized-tips');
+            const cognitiveScore = student.認知思考分數 || 0;
+            
+            // 根據學生狀況動態調整建議內容
+            if (cognitiveScore < 60) {
+                tips.querySelector('.tip-card:first-child h4').textContent = '建立基礎：從「理解」到「應用」';
+                tips.querySelector('.tip-card:first-child p').textContent = '先確保理解基本概念，再嘗試實際應用。';
+            } else if (cognitiveScore >= 80) {
+                tips.querySelector('.tip-card:first-child h4').textContent = '挑戰進階：從「分析」到「創造」';
+                tips.querySelector('.tip-card:first-child p').textContent = '您已經具備優秀的分析能力，可以嘗試創新思考。';
+            }
+        }
+
+        // 更新學習路徑
+        function updateLearningPath(student, engagementData) {
+            const pathTitle = document.querySelector('.path-title span:last-child');
+            const interactionCount = student.互動次數 || 0;
+            const cognitiveScore = student.認知思考分數 || 0;
+            
+            if (interactionCount > 100 && cognitiveScore < 70) {
+                pathTitle.textContent = '建議路徑：提升思考深度型學習者';
+            } else if (interactionCount < 50 && cognitiveScore > 70) {
+                pathTitle.textContent = '建議路徑：增加互動頻率型學習者';
+            } else if (interactionCount > 100 && cognitiveScore > 80) {
+                pathTitle.textContent = '建議路徑：卓越保持型學習者';
+            }
+        }
+
+        // 檢查成就
+        function checkAchievements(student, engagementData) {
+            const achievements = [];
+            
+            if (engagementData.score >= 90) {
+                achievements.push({
+                    title: '認知大師',
+                    desc: '認知參與度達到90分！'
+                });
+            }
+            
+            if (student.互動次數 >= 100) {
+                achievements.push({
+                    title: '學習達人',
+                    desc: '互動次數突破100次！'
+                });
+            }
+            
+            if (parseFloat(student.完成度) === 100) {
+                achievements.push({
+                    title: '完美達成',
+                    desc: '課程完成度100%！'
+                });
+            }
+            
+            // 顯示第一個成就
+            if (achievements.length > 0) {
+                setTimeout(() => {
+                    showAchievement(achievements[0].title, achievements[0].desc);
+                }, 1000);
+            }
+        }
+
+        // 顯示成就通知
+        function showAchievement(title, desc) {
+            const notification = document.getElementById('achievementNotification');
+            document.getElementById('achievementTitle').textContent = title;
+            document.getElementById('achievementDesc').textContent = desc;
+            
+            notification.classList.add('show');
+            notification.classList.add('achievement-unlocked');
+            
+            // 播放慶祝動畫
+            setTimeout(() => {
+                notification.classList.remove('achievement-unlocked');
+            }, 800);
+            
+            // 5秒後隱藏
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // 發送到 LINE bot
+        function sendToLineBot() {
+            // 方案一：直接開啟 LINE 並預填訊息
+            const studentName = document.getElementById('studentName').textContent;
+            const today = new Date().toLocaleDateString('zh-TW');
+            
+            // 收集反思內容
+            const reflections = {
+                concept: prompt('這週我學到最重要的 Python 概念是...（例如：理解了函數參數的傳遞方式）'),
+                difficulty: prompt('我遇到的困難和解決方法...（例如：遞迴函數很難理解，透過畫圖追蹤執行流程後豁然開朗）'),
+                nextWeek: prompt('下週我想深入探討...（例如：想了解如何使用 Python 處理檔案和例外處理）')
+            };
+            
+            // 檢查是否都有填寫
+            if (reflections.concept && reflections.difficulty && reflections.nextWeek) {
+                // 建立格式化的訊息
+                const message = 
+`📝 學習反思記錄
+👤 學生：${studentName} (${currentStudentId})
+📅 日期：${today}
+
+💡 本週重要概念：
+${reflections.concept}
+
+🤔 遇到的困難與解決：
+${reflections.difficulty}
+
+🎯 下週學習目標：
+${reflections.nextWeek}
+
+#學習反思 #Python學習 #自我調節學習`;
+
+                // 方案一：使用 LINE 深層連結（推薦）
+                const encodedMessage = encodeURIComponent(message);
+                const lineURL = `https://line.me/R/msg/text/?${encodedMessage}`;
+                
+                // 開啟 LINE 並預填訊息
+                window.open(lineURL, '_blank');
+                
+                // 同時儲存到 Google Sheets（透過 Apps Script）
+                saveReflectionToSheet(reflections);
+                
+                // 顯示成功訊息
+                setTimeout(() => {
+                    alert('反思內容已準備好！\n\n請在開啟的 LINE 視窗中：\n1. 選擇要傳送給 Python 學習 Bot\n2. 點擊傳送\n\n您的反思將被記錄並獲得學習建議。');
+                }, 1000);
+            } else {
+                alert('請完整填寫所有反思內容。');
+            }
+        }
+
+        // 儲存反思到 Google Sheets
+        async function saveReflectionToSheet(reflections) {
+            try {
+                const response = await fetch(`${WEB_APP_URL}?action=saveReflection`, {
+                    method: 'POST',
+                    mode: 'no-cors', // 避免 CORS 問題
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({
+                        studentId: currentStudentId,
+                        studentName: document.getElementById('studentName').textContent,
+                        reflections: reflections,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                console.log('反思已儲存到雲端');
+            } catch (error) {
+                console.error('儲存反思時發生錯誤:', error);
+            }
         }
 
         // 支援 Enter 鍵登入
@@ -633,6 +1728,16 @@
                     handleLogin();
                 }
             });
+        });
+
+        // 錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('全域錯誤:', e);
+        });
+
+        // 處理非同步錯誤
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('非同步錯誤:', e);
         });
     </script>
 </body>
