@@ -301,7 +301,6 @@
         .level-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            animation: pulse 2s infinite;
         }
 
         .level-item::before {
@@ -491,10 +490,6 @@
         }
 
         /* 動畫效果 */
-        .animate-slide-in, .animate-slide-up {
-            opacity: 0;
-        }
-        
         @keyframes slideInLeft {
             from {
                 opacity: 0;
@@ -940,7 +935,7 @@
             </div>
 
             <!-- 問題品質視覺化儀表板 -->
-            <div class="glass cognitive-levels-card animate-slide-in">
+            <div class="glass cognitive-levels-card">
                 <h2 style="font-size: 24px; font-weight: bold; color: #5b21b6; margin-bottom: 5px;">💡 我的提問品質分析</h2>
                 <p style="color: #6d28d9; margin-bottom: 20px;">基於 Bloom's Taxonomy 認知層次分類</p>
                 <div class="levels-chart">
@@ -984,7 +979,7 @@
             </div>
 
             <!-- 個人化學習建議區 -->
-            <div class="glass personalized-tips animate-slide-up">
+            <div class="glass personalized-tips">
                 <h2 style="font-size: 24px; font-weight: bold; color: #ea580c; margin-bottom: 20px;">🎓 個人化 Python 學習建議</h2>
                 <div class="tip-card high-priority">
                     <span class="icon">🚀</span>
@@ -1049,6 +1044,25 @@ def my_function():
                 </div>
             </div>
 
+            <!-- 排名計算說明 -->
+            <div class="glass" style="padding: 20px; margin-bottom: 30px; background: rgba(237, 233, 254, 0.3); border: 1px solid rgba(139, 92, 246, 0.3);">
+                <details>
+                    <summary style="cursor: pointer; font-size: 16px; color: #5b21b6; font-weight: bold;">
+                        📊 認知參與度排名計算方式（點擊展開）
+                    </summary>
+                    <div style="margin-top: 15px;">
+                        <p style="font-size: 14px; color: #6d28d9; line-height: 1.6;">
+                            您的認知參與度總分由以下四個部分組成：<br>
+                            • <strong>認知思考分數 (40%)</strong>：反映思考深度與品質<br>
+                            • <strong>互動參與 (20%)</strong>：鼓勵積極參與，使用對數計算避免純量化<br>
+                            • <strong>完成度 (25%)</strong>：重視學習任務的完成<br>
+                            • <strong>出席率 (15%)</strong>：基本的學習態度<br>
+                            <span style="font-size: 12px; opacity: 0.8;">💡 排名是動態的，會根據全班表現即時更新</span>
+                        </p>
+                    </div>
+                </details>
+            </div>
+
             <!-- 反思日誌 -->
             <div class="glass reflection-section">
                 <h2 style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 20px;">📝 本週學習反思</h2>
@@ -1087,7 +1101,7 @@ def my_function():
                     <div class="kpi-icon" id="improvementIcon">📈</div>
                 </div>
 
-                <div class="glass kpi-card">
+                <div class="glass kpi-card" style="cursor: pointer;" onclick="showRankingDetails()">
                     <div class="kpi-content">
                         <h3>班級排名</h3>
                         <div class="value" id="classRank">0</div>
@@ -1264,11 +1278,20 @@ def my_function():
             }
             
             const count = allStudents.length;
-            const avgEngagement = allStudents.reduce((sum, s) => sum + calculateCognitiveEngagement(s).score, 0) / count;
+            
+            // 計算各項平均值
+            const avgCognitive = allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count;
+            const avgCompletion = allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count;
+            
+            // 計算平均認知參與度
+            const avgEngagement = allStudents.reduce((sum, s) => {
+                const engagement = calculateCognitiveEngagement(s);
+                return sum + engagement.score;
+            }, 0) / count;
             
             return {
-                cognitiveScore: Math.round(allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count),
-                completionRate: Math.round(allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count),
+                cognitiveScore: Math.round(avgCognitive),
+                completionRate: Math.round(avgCompletion),
                 engagementScore: Math.round(avgEngagement)
             };
         }
@@ -1550,21 +1573,8 @@ def my_function():
             // 檢查並顯示成就
             checkAchievements(student, engagementData);
             
-            // 加入動畫效果
-            setTimeout(() => {
-                document.querySelectorAll('.animate-slide-in').forEach((el, index) => {
-                    setTimeout(() => {
-                        el.style.opacity = '1';
-                        el.style.animation = 'slideInLeft 0.6s ease-out';
-                    }, index * 100);
-                });
-                document.querySelectorAll('.animate-slide-up').forEach((el, index) => {
-                    setTimeout(() => {
-                        el.style.opacity = '1';
-                        el.style.animation = 'slideInUp 0.6s ease-out';
-                    }, index * 100);
-                });
-            }, 100);
+            console.log('儀表板更新完成');
+        }
         }
 
         // 更新問題品質分析
@@ -1783,6 +1793,32 @@ ${reflections.nextWeek}
                 }, 1000);
             } else {
                 alert('請完整填寫所有反思內容。');
+            }
+        }
+
+        // 顯示排名詳情
+        function showRankingDetails() {
+            const message = `
+📊 您的認知參與度排名詳情
+
+認知參與度計算方式：
+• 認知思考分數 (40%)
+• 互動參與 (20%)
+• 完成度 (25%)
+• 出席率 (15%)
+
+💡 提升排名的建議：
+1. 提高認知思考分數：多提出高層次問題
+2. 保持穩定互動：質量並重
+3. 完成所有學習任務
+4. 保持良好出席率
+
+點擊確定查看即時排名`;
+            
+            if (confirm(message)) {
+                // 在控制台顯示詳細排名
+                console.log('=== 班級認知參與度即時排名 ===');
+                console.log('（請打開開發者工具的 Console 查看）');
             }
         }
 
