@@ -934,7 +934,8 @@
                 </div>
             </div>
 
-            <!-- 問題品質視覺化儀表板 -->
+            <!-- 問題品質視覺化儀表板 - 暫時隱藏，以後會用到 -->
+            <!--
             <div class="glass cognitive-levels-card">
                 <h2 style="font-size: 24px; font-weight: bold; color: #5b21b6; margin-bottom: 5px;">💡 我的提問品質分析</h2>
                 <p style="color: #6d28d9; margin-bottom: 20px;">基於 Bloom's Taxonomy 認知層次分類</p>
@@ -977,6 +978,7 @@
                     </div>
                 </div>
             </div>
+            -->
 
             <!-- 個人化學習建議區 -->
             <div class="glass personalized-tips">
@@ -1388,7 +1390,6 @@ def my_function():
         
         // 更新儀表板內容
         function updateDashboardContent(student, allStudents, classAvg, engagementData, engagementInfo) {
-
             // 更新基本資訊
             safeUpdateElement('studentName', student.姓名 || '學生');
             safeUpdateElement('studentId', student.學號);
@@ -1454,12 +1455,14 @@ def my_function():
                 goalAchievement >= 60 ? "穩步達成學習目標" :
                 "需要更多努力達成目標");
 
-            // 更新問題品質分析（基於認知思考分數分布）
+            // 更新問題品質分析（基於認知思考分數分布）- 暫時隱藏功能
+            /*
             try {
                 updateCognitiveLevels(student);
             } catch (error) {
                 console.error('更新認知層次失敗:', error);
             }
+            */
             
             // 更新個人化建議
             try {
@@ -1546,7 +1549,6 @@ def my_function():
             checkAchievements(student, engagementData);
             
             console.log('儀表板更新完成');
-        }
         }
 
         // 更新問題品質分析
