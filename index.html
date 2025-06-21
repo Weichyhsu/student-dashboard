@@ -1044,25 +1044,6 @@ def my_function():
                 </div>
             </div>
 
-            <!-- 排名計算說明 -->
-            <div class="glass" style="padding: 20px; margin-bottom: 30px; background: rgba(237, 233, 254, 0.3); border: 1px solid rgba(139, 92, 246, 0.3);">
-                <details>
-                    <summary style="cursor: pointer; font-size: 16px; color: #5b21b6; font-weight: bold;">
-                        📊 認知參與度排名計算方式（點擊展開）
-                    </summary>
-                    <div style="margin-top: 15px;">
-                        <p style="font-size: 14px; color: #6d28d9; line-height: 1.6;">
-                            您的認知參與度總分由以下四個部分組成：<br>
-                            • <strong>認知思考分數 (40%)</strong>：反映思考深度與品質<br>
-                            • <strong>互動參與 (20%)</strong>：鼓勵積極參與，使用對數計算避免純量化<br>
-                            • <strong>完成度 (25%)</strong>：重視學習任務的完成<br>
-                            • <strong>出席率 (15%)</strong>：基本的學習態度<br>
-                            <span style="font-size: 12px; opacity: 0.8;">💡 排名是動態的，會根據全班表現即時更新</span>
-                        </p>
-                    </div>
-                </details>
-            </div>
-
             <!-- 反思日誌 -->
             <div class="glass reflection-section">
                 <h2 style="font-size: 24px; font-weight: bold; color: #059669; margin-bottom: 20px;">📝 本週學習反思</h2>
@@ -1101,7 +1082,7 @@ def my_function():
                     <div class="kpi-icon" id="improvementIcon">📈</div>
                 </div>
 
-                <div class="glass kpi-card" style="cursor: pointer;" onclick="showRankingDetails()">
+                <div class="glass kpi-card">
                     <div class="kpi-content">
                         <h3>班級排名</h3>
                         <div class="value" id="classRank">0</div>
@@ -1172,70 +1153,29 @@ def my_function():
     </div>
 
     <script>
-        // 立即執行的初始化程式碼
-        (function() {
-            console.log('開始載入 JavaScript...');
-            
-            // Google Apps Script Web App URL
-            window.WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwpk38QGjiGSv0UwsfoGSolqAmCGAO3NCfz3vVCpPB9pi3uMNmNFGlCByvgPzYkJE8EUg/exec';
-            
-            // 全域變數
-            window.classData = {};
-            window.currentStudentId = null;
-            
-            // 測試基本功能
-            console.log('全域變數已初始化');
-        })();
+        // Google Apps Script Web App URL
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwpk38QGjiGSv0UwsfoGSolqAmCGAO3NCfz3vVCpPB9pi3uMNmNFGlCByvgPzYkJE8EUg/exec';
+        
+        // 全域變數
+        let classData = {};
+        let currentStudentId = null;
 
-        // 處理登入 - 完整版本
-        async function handleLogin() {
-            console.log('handleLogin 被呼叫');
-            const studentId = document.getElementById('studentInput').value.trim();
-            const loginBtn = document.getElementById('loginBtn');
-            const loginLoading = document.getElementById('loginLoading');
-            
-            // 管理員入口
-            if (studentId === '165540') {
-                showAdminPage();
-                return;
-            }
-            
-            // 檢查學號格式（9位數字）
-            if (!/^\d{9}$/.test(studentId)) {
-                alert('請輸入正確的9位數學號');
-                return;
-            }
-            
-            // 顯示載入狀態
-            loginBtn.disabled = true;
-            loginLoading.classList.add('show');
-            
-            try {
-                // 從 Apps Script 獲取學生資料
-                const response = await fetchDataFromAppsScript('getStudent', studentId);
-                
-                if (response.success && response.student) {
-                    // 儲存學號供重新載入使用
-                    window.currentStudentId = studentId;
-                    
-                    // 顯示儀表板
-                    showDashboard(response.student, response.allStudents);
-                } else {
-                    alert('查無此學號的資料，請確認後重新輸入或聯繫老師');
-                }
-            } catch (error) {
-                console.error('登入錯誤:', error);
-                alert('連線失敗，請檢查網路連線或稍後再試');
-            } finally {
-                loginBtn.disabled = false;
-                loginLoading.classList.remove('show');
+        // 安全更新元素內容的輔助函數
+        function safeUpdateElement(selector, value, isId = true) {
+            const element = isId ? document.getElementById(selector) : document.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                return true;
+            } else {
+                console.warn(`找不到元素: ${selector}`);
+                return false;
             }
         }
 
         // 從 Apps Script 獲取資料
         async function fetchDataFromAppsScript(action, studentId = null) {
             try {
-                let url = `${window.WEB_APP_URL}?action=${action}`;
+                let url = `${WEB_APP_URL}?action=${action}`;
                 if (studentId) {
                     url += `&studentId=${studentId}`;
                 }
@@ -1257,307 +1197,6 @@ def my_function():
                 throw error;
             }
         }
-
-        // 顯示管理員頁面 - 完整版本
-        async function showAdminPage() {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('adminPage').style.display = 'flex';
-            document.getElementById('dashboardPage').style.display = 'none';
-            
-            // 測試連線
-            const connectionStatus = document.getElementById('connectionStatus');
-            
-            try {
-                const response = await fetchDataFromAppsScript('testConnection');
-                
-                if (response.success) {
-                    connectionStatus.className = 'connection-status status-success';
-                    connectionStatus.innerHTML = `
-                        <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
-                        <div style="font-weight: bold;">連線成功！</div>
-                        <div style="font-size: 14px; margin-top: 5px;">已成功連接到 Google Sheets</div>
-                    `;
-                    
-                    // 顯示系統資訊
-                    const adminInfo = document.getElementById('adminInfo');
-                    if (adminInfo) {
-                        adminInfo.style.display = 'block';
-                    }
-                    safeUpdateElement('connectionState', '正常');
-                    safeUpdateElement('totalStudentCount', response.studentCount || 0);
-                } else {
-                    throw new Error('連線測試失敗');
-                }
-            } catch (error) {
-                connectionStatus.className = 'connection-status status-error';
-                connectionStatus.innerHTML = `
-                    <div style="font-size: 24px; margin-bottom: 10px;">❌</div>
-                    <div style="font-weight: bold;">連線失敗</div>
-                    <div style="font-size: 14px; margin-top: 5px;">請檢查 Apps Script 設定</div>
-                `;
-            }
-        }
-
-        // 計算認知參與度的函數
-        function calculateCognitiveEngagement(student) {
-            const interactionCount = student.互動次數 || 0;
-            const cognitiveScore = student.認知思考分數 || 0;
-            const completionRate = parseFloat(student.完成度) || 0;
-            const attendanceRate = parseFloat(student.出席率) || 0;
-            
-            const baseScore = cognitiveScore * 0.4;
-            const interactionScore = Math.min(Math.log10(interactionCount + 1) * 10, 20);
-            const completionScore = completionRate * 0.25;
-            const attendanceScore = attendanceRate * 0.15;
-            
-            const engagementScore = Math.round(baseScore + interactionScore + completionScore + attendanceScore);
-            const efficiency = Math.round((cognitiveScore / Math.max(interactionCount, 1)) * 100) / 100;
-            
-            return {
-                score: engagementScore,
-                efficiency: efficiency,
-                baseScore,
-                interactionScore,
-                completionScore,
-                attendanceScore
-            };
-        }
-
-        // 獲取認知參與度等級和描述
-        function getEngagementLevel(score) {
-            if (score >= 85) {
-                return {
-                    level: "高度認知參與",
-                    class: "excellent",
-                    description: "您展現了卓越的認知參與度！深度思考與有效互動讓您在學習中表現出色。"
-                };
-            } else if (score >= 70) {
-                return {
-                    level: "良好認知參與",
-                    class: "good",
-                    description: "您的認知參與度良好，在思考深度和學習策略運用上取得了平衡。"
-                };
-            } else if (score >= 55) {
-                return {
-                    level: "穩定認知參與",
-                    class: "average",
-                    description: "您的認知參與表現穩定，可以嘗試提高思考深度來提升學習效果。"
-                };
-            } else {
-                return {
-                    level: "發展中認知參與",
-                    class: "needs-improvement",
-                    description: "您正在發展認知參與能力！建議多進行深度思考和主動學習。"
-                };
-            }
-        }
-
-        // 計算班級平均值
-        function calculateClassAverage(allStudents) {
-            if (!allStudents || allStudents.length === 0) {
-                return { cognitiveScore: 0, completionRate: 0, engagementScore: 0 };
-            }
-            
-            const count = allStudents.length;
-            const avgCognitive = allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count;
-            const avgCompletion = allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count;
-            const avgEngagement = allStudents.reduce((sum, s) => {
-                const engagement = calculateCognitiveEngagement(s);
-                return sum + engagement.score;
-            }, 0) / count;
-            
-            return {
-                cognitiveScore: Math.round(avgCognitive),
-                completionRate: Math.round(avgCompletion),
-                engagementScore: Math.round(avgEngagement)
-            };
-        }
-
-        // 顯示學生儀表板
-        function showDashboard(student, allStudents) {
-            try {
-                console.log('開始顯示儀表板，學生資料:', student);
-                
-                const classAvg = calculateClassAverage(allStudents);
-                const engagementData = calculateCognitiveEngagement(student);
-                const engagementInfo = getEngagementLevel(engagementData.score);
-                
-                // 更新頁面顯示
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('adminPage').style.display = 'none';
-                document.getElementById('dashboardPage').style.display = 'block';
-
-                // 確保儀表板已經顯示後再更新內容
-                setTimeout(() => {
-                    updateDashboardContent(student, allStudents, classAvg, engagementData, engagementInfo);
-                }, 100);
-                
-            } catch (error) {
-                console.error('顯示儀表板時發生錯誤:', error);
-                alert('顯示資料時發生錯誤，請重新整理頁面再試');
-            }
-        }
-        
-        // 更新儀表板內容（簡化版）
-        function updateDashboardContent(student, allStudents, classAvg, engagementData, engagementInfo) {
-            // 更新基本資訊
-            safeUpdateElement('studentName', student.姓名 || '學生');
-            safeUpdateElement('studentId', student.學號);
-            
-            // 更新認知參與度
-            safeUpdateElement('qualityScore', engagementData.score);
-            
-            const qualityLevelElement = document.getElementById('qualityLevel');
-            if (qualityLevelElement) {
-                qualityLevelElement.textContent = engagementInfo.level;
-                qualityLevelElement.className = `quality-level ${engagementInfo.class}`;
-            }
-            
-            safeUpdateElement('qualityDescription', engagementInfo.description);
-            
-            // 更新 KPI
-            safeUpdateElement('cognitiveScore', student.認知思考分數 || 0);
-            safeUpdateElement('avgCognitive', classAvg.cognitiveScore || 0);
-            safeUpdateElement('completionRate', `${student.完成度 || "0"}%`);
-            safeUpdateElement('avgCompletion', `${classAvg.completionRate || 0}%`);
-            
-            // 計算排名
-            const currentStudentId = String(student.學號);
-            const sortedStudents = allStudents
-                .map(s => ({ 
-                    ...s, 
-                    engagementScore: calculateCognitiveEngagement(s).score 
-                }))
-                .sort((a, b) => b.engagementScore - a.engagementScore);
-            
-            const rank = sortedStudents.findIndex(s => String(s.學號) === currentStudentId) + 1;
-            
-            safeUpdateElement('classRank', rank || '計算中');
-            safeUpdateElement('totalStudents', allStudents.length);
-            
-            console.log('儀表板更新完成');
-        }
-
-        // 返回登入頁面
-        function goBackToLogin() {
-            document.getElementById('loginPage').style.display = 'flex';
-            document.getElementById('adminPage').style.display = 'none';
-            document.getElementById('dashboardPage').style.display = 'none';
-            document.getElementById('studentInput').value = '';
-            window.currentStudentId = null;
-        }
-
-        // 發送到 LINE bot - 完整版本
-        function sendToLineBot() {
-            const studentNameElement = document.getElementById('studentName');
-            const studentName = studentNameElement ? studentNameElement.textContent : '未知';
-            const today = new Date().toLocaleDateString('zh-TW');
-            
-            // 收集反思內容
-            const reflections = {
-                concept: prompt('這週我學到最重要的 Python 概念是...（例如：理解了函數參數的傳遞方式）'),
-                difficulty: prompt('我遇到的困難和解決方法...（例如：遞迴函數很難理解，透過畫圖追蹤執行流程後豁然開朗）'),
-                nextWeek: prompt('下週我想深入探討...（例如：想了解如何使用 Python 處理檔案和例外處理）')
-            };
-            
-            // 檢查是否都有填寫
-            if (reflections.concept && reflections.difficulty && reflections.nextWeek) {
-                // 建立格式化的訊息
-                const message = 
-`📝 學習反思記錄
-👤 學生：${studentName} (${window.currentStudentId})
-📅 日期：${today}
-
-💡 本週重要概念：
-${reflections.concept}
-
-🤔 遇到的困難與解決：
-${reflections.difficulty}
-
-🎯 下週學習目標：
-${reflections.nextWeek}
-
-#學習反思 #Python學習 #自我調節學習`;
-
-                // 使用 LINE 深層連結
-                const encodedMessage = encodeURIComponent(message);
-                const lineURL = `https://line.me/R/msg/text/?${encodedMessage}`;
-                
-                // 開啟 LINE 並預填訊息
-                window.open(lineURL, '_blank');
-                
-                // 顯示成功訊息
-                setTimeout(() => {
-                    alert('反思內容已準備好！\n\n請在開啟的 LINE 視窗中：\n1. 選擇要傳送給 Python 學習 Bot\n2. 點擊傳送\n\n您的反思將被記錄並獲得學習建議。');
-                }, 1000);
-            } else {
-                alert('請完整填寫所有反思內容。');
-            }
-        }
-
-        // 顯示排名詳情 - 完整版本
-        function showRankingDetails() {
-            const message = `
-📊 您的認知參與度排名詳情
-
-認知參與度計算方式：
-• 認知思考分數 (40%)
-• 互動參與 (20%)
-• 完成度 (25%)
-• 出席率 (15%)
-
-💡 提升排名的建議：
-1. 提高認知思考分數：多提出高層次問題
-2. 保持穩定互動：質量並重
-3. 完成所有學習任務
-4. 保持良好出席率
-
-點擊確定查看即時排名`;
-            
-            if (confirm(message)) {
-                console.log('=== 班級認知參與度即時排名 ===');
-                console.log('（請打開開發者工具的 Console 查看）');
-            }
-        }
-
-        // DOM 載入完成後執行
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM 載入完成，檢查函數:', {
-                handleLogin: typeof handleLogin,
-                goBackToLogin: typeof goBackToLogin,
-                showAdminPage: typeof showAdminPage,
-                showRankingDetails: typeof showRankingDetails,
-                sendToLineBot: typeof sendToLineBot
-            });
-            
-            // 綁定 Enter 鍵事件
-            const studentInput = document.getElementById('studentInput');
-            if (studentInput) {
-                studentInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        handleLogin();
-                    }
-                });
-            }
-        });
-
-        // 錯誤處理
-        window.onerror = function(msg, url, line, col, error) {
-            console.error('JavaScript 錯誤:', {
-                訊息: msg,
-                來源: url,
-                行號: line,
-                列號: col,
-                錯誤: error
-            });
-            return false;
-        };
-
-        // 測試完整功能載入
-        console.log('所有功能已載入');
-    </script>
-</body>
-</html>
 
         // 計算認知參與度的函數
         function calculateCognitiveEngagement(student) {
@@ -1620,22 +1259,57 @@ ${reflections.nextWeek}
             }
             
             const count = allStudents.length;
-            
-            // 計算各項平均值
-            const avgCognitive = allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count;
-            const avgCompletion = allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count;
-            
-            // 計算平均認知參與度
-            const avgEngagement = allStudents.reduce((sum, s) => {
-                const engagement = calculateCognitiveEngagement(s);
-                return sum + engagement.score;
-            }, 0) / count;
+            const avgEngagement = allStudents.reduce((sum, s) => sum + calculateCognitiveEngagement(s).score, 0) / count;
             
             return {
-                cognitiveScore: Math.round(avgCognitive),
-                completionRate: Math.round(avgCompletion),
+                cognitiveScore: Math.round(allStudents.reduce((sum, s) => sum + (s.認知思考分數 || 0), 0) / count),
+                completionRate: Math.round(allStudents.reduce((sum, s) => sum + (parseFloat(s.完成度) || 0), 0) / count),
                 engagementScore: Math.round(avgEngagement)
             };
+        }
+
+        // 處理登入
+        async function handleLogin() {
+            const studentId = document.getElementById('studentInput').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            const loginLoading = document.getElementById('loginLoading');
+            
+            // 管理員入口
+            if (studentId === '165540') {
+                showAdminPage();
+                return;
+            }
+            
+            // 檢查學號格式（9位數字）
+            if (!/^\d{9}$/.test(studentId)) {
+                alert('請輸入正確的9位數學號');
+                return;
+            }
+            
+            // 顯示載入狀態
+            loginBtn.disabled = true;
+            loginLoading.classList.add('show');
+            
+            try {
+                // 從 Apps Script 獲取學生資料
+                const response = await fetchDataFromAppsScript('getStudent', studentId);
+                
+                if (response.success && response.student) {
+                    // 儲存學號供重新載入使用
+                    currentStudentId = studentId;
+                    
+                    // 顯示儀表板
+                    showDashboard(response.student, response.allStudents);
+                } else {
+                    alert('查無此學號的資料，請確認後重新輸入或聯繫老師');
+                }
+            } catch (error) {
+                console.error('登入錯誤:', error);
+                alert('連線失敗，請檢查網路連線或稍後再試');
+            } finally {
+                loginBtn.disabled = false;
+                loginLoading.classList.remove('show');
+            }
         }
 
         // 顯示管理員頁面
@@ -2094,32 +1768,6 @@ ${reflections.nextWeek}
             }
         }
 
-        // 顯示排名詳情
-        function showRankingDetails() {
-            const message = `
-📊 您的認知參與度排名詳情
-
-認知參與度計算方式：
-• 認知思考分數 (40%)
-• 互動參與 (20%)
-• 完成度 (25%)
-• 出席率 (15%)
-
-💡 提升排名的建議：
-1. 提高認知思考分數：多提出高層次問題
-2. 保持穩定互動：質量並重
-3. 完成所有學習任務
-4. 保持良好出席率
-
-點擊確定查看即時排名`;
-            
-            if (confirm(message)) {
-                // 在控制台顯示詳細排名
-                console.log('=== 班級認知參與度即時排名 ===');
-                console.log('（請打開開發者工具的 Console 查看）');
-            }
-        }
-
         // 儲存反思到 Google Sheets
         async function saveReflectionToSheet(reflections) {
             try {
@@ -2169,13 +1817,6 @@ ${reflections.nextWeek}
             if (missingElements.length > 0) {
                 console.error('缺少必要的 HTML 元素:', missingElements);
             }
-            
-            // 檢查關鍵函數是否存在
-            console.log('函數檢查:');
-            console.log('- handleLogin:', typeof window.handleLogin);
-            console.log('- goBackToLogin:', typeof window.goBackToLogin);
-            console.log('- showRankingDetails:', typeof window.showRankingDetails);
-            console.log('- sendToLineBot:', typeof window.sendToLineBot);
         });
 
         // 錯誤處理
@@ -2194,15 +1835,6 @@ ${reflections.nextWeek}
         window.addEventListener('unhandledrejection', function(e) {
             console.error('非同步錯誤:', e);
             console.error('Promise 錯誤:', e.reason);
-        });
-
-        // 最終檢查
-        console.log('JavaScript 載入完成');
-        console.log('全域函數狀態:', {
-            handleLogin: typeof window.handleLogin,
-            goBackToLogin: typeof window.goBackToLogin,
-            showRankingDetails: typeof window.showRankingDetails,
-            sendToLineBot: typeof window.sendToLineBot
         });
     </script>
 </body>
